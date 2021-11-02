@@ -53,7 +53,8 @@ namespace ElasticArchiveHandler
             {
                 archiverSourceService.Save(rslt);
             }
-            _elasticClient.DeleteMany(rslt);
+            //_elasticClient.DeleteMany<object>(rslt);
+            _elasticClient.DeleteByQuery< object>(q => q.Query(rq => boolQuery).AllIndices());
 
         }
 
