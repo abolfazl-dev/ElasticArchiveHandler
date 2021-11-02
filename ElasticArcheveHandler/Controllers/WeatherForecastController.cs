@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using ElasticArchiveHandler;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -8,7 +9,7 @@ using System.Threading.Tasks;
 namespace ElasticArcheveHandler.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("[controller]/[action]")]
     public class WeatherForecastController : ControllerBase
     {
         private static readonly string[] Summaries = new[]
@@ -17,15 +18,19 @@ namespace ElasticArcheveHandler.Controllers
         };
 
         private readonly ILogger<WeatherForecastController> _logger;
+        private readonly IElasticArchiveService _elasticArchiveService;
 
-        public WeatherForecastController(ILogger<WeatherForecastController> logger)
+        public WeatherForecastController(ILogger<WeatherForecastController> logger, IElasticArchiveService elasticArchiveService )
         {
             _logger = logger;
+            _elasticArchiveService = elasticArchiveService;
         }
 
         [HttpGet]
-        public IEnumerable<WeatherForecast> Get()
+        public async Task<IEnumerable<WeatherForecast>> Get()
         {
+
+            _elasticArchiveService.Archive<ElasticArchiveExcelStrategy>(indeiceName: null, DateTime.Now, DateTime.Now.AddDays(-2));
             var rng = new Random();
             return Enumerable.Range(1, 5).Select(index => new WeatherForecast
             {

@@ -10,10 +10,10 @@ namespace ElasticArcheveHandler
 {
     public static class ElasticExtension
     {
-        public static IServiceCollection AddElastic(IServiceCollection services)
+        public static IServiceCollection AddElastic(this IServiceCollection services)
         {
-            services.AddSingleton(BuildElasticClient);
             services.AddElasticArchiveService();
+            services.AddSingleton(BuildElasticClient);
             return services;
         }
 
@@ -24,6 +24,15 @@ namespace ElasticArcheveHandler
                 .ThrowExceptions(alwaysThrow: true)
                 .PrettyJson();
             var client = new ElasticClient(settings);
+            var allIndices = client.Indices.Get(new GetIndexRequest(Indices.All));
+            
+            foreach (var index in allIndices.Indices)
+            {
+
+                client.Indices.UpdateSettings(index.Key.Name, s => s
+                .IndexSettings(i => i.Setting(UpdatableIndexSettings.MaxResultWindow, int.MaxValue)));
+            }
+
             return client;
         }
     }

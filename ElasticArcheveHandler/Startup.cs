@@ -28,6 +28,7 @@ namespace ElasticArcheveHandler
         {
 
             services.AddControllers();
+            services.AddElastic();
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "ElasticArcheveHandler", Version = "v1" });
