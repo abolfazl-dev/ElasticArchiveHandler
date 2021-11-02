@@ -134,29 +134,50 @@ namespace ElasticArchiveHandler
 
         public virtual async Task ArchiveAsync<TArchiveDataSourceService>(string indiceName, DateTime to, DateTime? from = null, bool IsPhysicalDelete = false) where TArchiveDataSourceService : IElasticArchiveDataSourceStrategy 
         {
-            var archiverSourceService = _elasticArchiveDataSourceServices.FirstOrDefault(x => x.GetType() == typeof(TArchiveDataSourceService));
+
+            var archiverSourceService = _elasticArchiveDataSourceServices.FirstOrDefault();
             var boolQuery = GetQuery(to, from);
 
             IEnumerable<dynamic> rslt;
             if (boolQuery != null)
             {
-                rslt = (await _elasticClient.SearchAsync<dynamic>(s => s
-                .Index(indiceName)
-                .Query(q => boolQuery)
-                .Size(int.MaxValue)
+                if (indiceName == null)
+                {
+                    rslt = (await _elasticClient.SearchAsync<object>(s => s
+                    .AllIndices()
+                    .Query(q => boolQuery)
+                    .Size(int.MaxValue)
+                    )).Documents;
+                }
+                else
+                {
+                    rslt = (await _elasticClient.SearchAsync<dynamic>(s => s
+                    .Index(indiceName)
+                    .Query(q => boolQuery)
+                    .Size(int.MaxValue)
                 )).Documents;
+                }
             }
             else
             {
                 var index = MapDateTimeToIndex(to);
-                rslt = new[] { _elasticClient.Get<dynamic>(index, g => g.Index(indiceName)).Source };
+                rslt = new[] { (await _elasticClient.GetAsync<dynamic>(index, g => g.Index(indiceName))).Source };
             }
 
             if (!IsPhysicalDelete)
             {
-                archiverSourceService.Save(rslt);
+                archiverSourceService.SaveAsync(rslt);
             }
-            _elasticClient.DeleteMany(rslt);
+            //_elasticClient.DeleteMany<object>(rslt);
+            if(indiceName == null)
+            {
+                _elasticClient.DeleteByQuery<object>(q => q.Query(rq => boolQuery).AllIndices());
+
+            }
+            else
+            {
+                _elasticClient.DeleteByQuery<object>(q => q.Query(rq => boolQuery).Index(indiceName));
+            }
         }
 
         public virtual string MapDateTimeToIndex(DateTime dateTime, string indeiceName = null)
