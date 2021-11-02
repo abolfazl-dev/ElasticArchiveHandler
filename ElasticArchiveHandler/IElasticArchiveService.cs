@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace ElasticArchiveHandler
 {
-    public interface IElasticArchiveStrategy
+    public interface IElasticArchiveService
     {
         ///use protected on this
         /// <summary>

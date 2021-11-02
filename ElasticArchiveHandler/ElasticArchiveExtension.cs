@@ -12,7 +12,7 @@ namespace ElasticArchiveHandler
     {
         public static IServiceCollection AddElasticArchiveService<TElasticArchiveService>(this IServiceCollection services) where TElasticArchiveService : ElasticArchiveService
         {
-            services.AddSingleton<IElasticArchiveStrategy, TElasticArchiveService>();
+            services.AddSingleton<IElasticArchiveService, TElasticArchiveService>();
             
             var strategies = GetAllImpls();
             foreach(var st in strategies)
@@ -25,7 +25,7 @@ namespace ElasticArchiveHandler
         
         public static IServiceCollection AddElasticArchiveService(this IServiceCollection services)
         {
-            services.AddSingleton<IElasticArchiveStrategy, ElasticArchiveService>();
+            services.AddSingleton<IElasticArchiveService, ElasticArchiveService>();
 
             var strategies = GetAllImpls();
             foreach (var st in strategies)

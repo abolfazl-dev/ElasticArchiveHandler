@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace ElasticArchiveHandler
 {
-    public class ElasticArchiveService : IElasticArchiveStrategy
+    public class ElasticArchiveService : IElasticArchiveService
     {
         private readonly IEnumerable<IElasticArchiveDataSourceStrategy> _elasticArchiveDataSourceServices;
 
