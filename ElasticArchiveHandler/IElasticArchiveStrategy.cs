@@ -41,7 +41,7 @@ namespace ElasticArchiveHandler
 
 
         /// <summary>
-        /// 
+        ///  search against all documents in all indices
         /// </summary>
         /// <param name="indeiceName"></param>
         /// <param name="from"></param>

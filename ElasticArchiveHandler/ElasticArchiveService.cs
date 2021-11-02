@@ -27,11 +27,21 @@ namespace ElasticArchiveHandler
             IEnumerable<dynamic> rslt;
             if(boolQuery != null)
             {
-                rslt = _elasticClient.Search<dynamic>(s => s
+                if (indiceName == null) {
+                    rslt = _elasticClient.Search<object>(s => s
+                    .AllIndices()
+                    .Query(q => boolQuery)
+                    .Size(int.MaxValue)
+                    ).Documents;
+                }
+                else
+                {
+                    rslt = _elasticClient.Search<dynamic>(s => s
                 .Index(indiceName)
                 .Query(q => boolQuery)
                 .Size(int.MaxValue)
                 ).Documents;
+                }
             }
             else
             {
