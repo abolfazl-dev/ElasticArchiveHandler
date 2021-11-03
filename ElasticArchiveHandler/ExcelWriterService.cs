@@ -32,6 +32,7 @@ namespace ElasticArchiveHandler
 
             worksheet.AutoFitColumns();
             worksheet.AutoFitRows();
+            workbook.FileFormat = FileFormatType.Csv;
             using var stream = workbook.SaveToStream();
 
             return stream.ToArray();
@@ -64,7 +65,7 @@ namespace ElasticArchiveHandler
 
 
             //JsonUtility.ImportData(jsonInput, worksheet.Cells, 0, 0, options);
-
+            workbook.FileFormat = FileFormatType.Csv;
             using var stream = workbook.SaveToStream();
 
             return stream.ToArray();
