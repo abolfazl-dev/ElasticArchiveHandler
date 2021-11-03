@@ -13,6 +13,7 @@ namespace ElasticArchiveHandler
         public static IServiceCollection AddElasticArchiveService<TElasticArchiveService>(this IServiceCollection services) where TElasticArchiveService : ElasticArchiveService
         {
             services.AddSingleton<IElasticArchiveService, TElasticArchiveService>();
+            services.AddSingleton<IExcelWriterService, ExcelWriterService>();
             
             var strategies = GetAllImpls();
             foreach(var st in strategies)
@@ -26,6 +27,8 @@ namespace ElasticArchiveHandler
         public static IServiceCollection AddElasticArchiveService(this IServiceCollection services)
         {
             services.AddSingleton<IElasticArchiveService, ElasticArchiveService>();
+            services.AddSingleton<IExcelWriterService, ExcelWriterService>();
+
 
             var strategies = GetAllImpls();
             foreach (var st in strategies)
