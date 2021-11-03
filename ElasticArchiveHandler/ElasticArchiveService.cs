@@ -21,163 +21,149 @@ namespace ElasticArchiveHandler
 
         public virtual void Archive<TArchiveDataSourceService>(string indiceName, DateTime to, DateTime? from = null, bool IsPhysicalDelete = false) where TArchiveDataSourceService : IElasticArchiveDataSourceStrategy
         {
-            var archiverSourceService = _elasticArchiveDataSourceServices.FirstOrDefault();
-            var boolQuery = GetQuery(to, from);
-
-            IEnumerable<dynamic> rslt;
-            if(boolQuery != null)
-            {
-                if (indiceName == null) {
-                    rslt = _elasticClient.Search<object>(s => s
-                    .AllIndices()
-                    .Query(q => boolQuery)
-                    .Size(int.MaxValue)
-                    ).Documents;
-                }
-                else
-                {
-                    rslt = _elasticClient.Search<dynamic>(s => s
-                .Index(indiceName)
-                .Query(q => boolQuery)
-                .Size(int.MaxValue)
-                ).Documents;
-                }
-            }
-            else
-            {
-                var index = MapDateTimeToIndex(to);
-                rslt = new[] { _elasticClient.Get<dynamic>(index, g => g.Index(indiceName)).Source };
-            }
-
-            if (!IsPhysicalDelete)
-            {
-                archiverSourceService.Save(rslt);
-            }
-            //_elasticClient.DeleteMany<object>(rslt);
-            _elasticClient.DeleteByQuery< object>(q => q.Query(rq => boolQuery).AllIndices());
-
-        }
-
-        public virtual void Archive<TArchiveDataSourceService, TObject>(string indiceName, DateTime to, DateTime? from = null, bool IsPhysicalDelete = false) where TArchiveDataSourceService : IElasticArchiveDataSourceStrategy where TObject : class
-        {
-            var archiverSourceService = _elasticArchiveDataSourceServices.FirstOrDefault(x => x.GetType() == typeof(TArchiveDataSourceService));
-            var boolQuery = GetQuery(to, from);
-
-            IEnumerable<TObject> rslt;
-            if (boolQuery != null)
-            {
-                rslt =  _elasticClient.Search<TObject>(s => {
-                    var c = s
-                        .Query(q => boolQuery)
-                        .Size(int.MaxValue);
-                    if (indiceName != null)
-                    {
-                        c = c.Index(indiceName);
-                    }
-                    return c;
-                }
-                ).Documents;
-            }
-            else
-            {
-                var index = MapDateTimeToIndex(to);
-                rslt = new[] { _elasticClient.Get<TObject>(index, g => g.Index(indiceName)).Source };
-            }
-
-            if (!IsPhysicalDelete)
-            {
-                archiverSourceService.Save(rslt);
-            }
-            _elasticClient.DeleteMany(rslt);
-
-        }
-
-        public virtual async Task ArchiveAsync<TArchiveDataSourceService, TObject>(string indiceName, DateTime to, DateTime? from = null, bool IsPhysicalDelete = false) where TArchiveDataSourceService : IElasticArchiveDataSourceStrategy where TObject : class
-        {
-            var archiverSourceService = _elasticArchiveDataSourceServices.FirstOrDefault(x => x.GetType() == typeof(TArchiveDataSourceService));
-            var boolQuery = GetQuery(to, from);
-
-            IEnumerable<TObject> rslt;
-            if (boolQuery != null)
-            {
-                rslt = (await _elasticClient.SearchAsync<TObject>(s => {
-                    var c = s
-                        .Query(q => boolQuery)
-                        .Size(int.MaxValue);
-                    if (indiceName != null)
-                    {
-                        c = c.Index(indiceName);
-                    }
-                    return c;
-                }
-                )).Documents;
-            }
-            else
-            {
-                var index = MapDateTimeToIndex(to);
-                if(indiceName != null)
-                {
-                    rslt = new[] { (await _elasticClient.GetAsync<TObject>(index, g => g.Index(indiceName))).Source };
-                }
-                else
-                {
-                    rslt = new[] { (await _elasticClient.GetAsync<TObject>(index)).Source };
-                }
-            }
-
-            if (!IsPhysicalDelete)
-            {
-                await archiverSourceService.SaveAsync(rslt);
-            }
-            await _elasticClient.DeleteManyAsync(rslt);
-        }
-
-        public virtual async Task ArchiveAsync<TArchiveDataSourceService>(string indiceName, DateTime to, DateTime? from = null, bool IsPhysicalDelete = false) where TArchiveDataSourceService : IElasticArchiveDataSourceStrategy 
-        {
-
-            var archiverSourceService = _elasticArchiveDataSourceServices.FirstOrDefault();
-            var boolQuery = GetQuery(to, from);
-
-            IEnumerable<dynamic> rslt;
-            if (boolQuery != null)
-            {
-                if (indiceName == null)
-                {
-                    rslt = (await _elasticClient.SearchAsync<object>(s => s
-                    .AllIndices()
-                    .Query(q => boolQuery)
-                    .Size(int.MaxValue)
-                    )).Documents;
-                }
-                else
-                {
-                    rslt = (await _elasticClient.SearchAsync<dynamic>(s => s
-                    .Index(indiceName)
-                    .Query(q => boolQuery)
-                    .Size(int.MaxValue)
-                )).Documents;
-                }
-            }
-            else
-            {
-                var index = MapDateTimeToIndex(to);
-                rslt = new[] { (await _elasticClient.GetAsync<dynamic>(index, g => g.Index(indiceName))).Source };
-            }
-
-            if (!IsPhysicalDelete)
-            {
-                archiverSourceService.SaveAsync(rslt);
-            }
-            //_elasticClient.DeleteMany<object>(rslt);
+            GetIndexResponse allIndices;
             if(indiceName == null)
             {
-                _elasticClient.DeleteByQuery<object>(q => q.Query(rq => boolQuery).AllIndices());
-
+                allIndices = _elasticClient.Indices.Get(new GetIndexRequest(Indices.All));
             }
             else
             {
-                _elasticClient.DeleteByQuery<object>(q => q.Query(rq => boolQuery).Index(indiceName));
+                allIndices = _elasticClient.Indices.Get(indiceName);
+
             }
+
+            int toDt = to.Year * 100 + to.Month ;
+            int frDt = from == null ? 0 : from.Value.Year * 100 + from.Value.Month ;
+
+            var mustDeleteIndices = new List<string>();
+            var mustDeleteDocuments = new Dictionary<string, IEnumerable<object>>();
+
+            if (indiceName != null)
+            {
+                var indexName = indiceName;
+
+                int st = Convert.ToInt32(indiceName.Substring(indiceName.Length - 6, 6));
+                if (st <= toDt && st >= frDt)
+                {
+                    mustDeleteIndices.Add(indexName);
+                }
+                var documents = _elasticClient.Search<object>(s => s
+                    .Index(indexName)
+                    .Query(q => q.MatchAll())
+                    .Size(int.MaxValue)
+                    ).Documents;
+
+                mustDeleteDocuments.Add(indexName, documents.ToList());
+            }
+            else
+            {
+                foreach (var index in allIndices.Indices.Where(x => x.Key.Name.StartsWith("openBanking")))
+                {
+                    var indexName = index.Key.Name;
+
+                    int st = Convert.ToInt32(index.Key.Name.Substring(index.Key.Name.Length - 6, 6));
+                    if (st <= toDt && st >= frDt)
+                    {
+                        mustDeleteIndices.Add(indexName);
+                    }
+                    var documents = _elasticClient.Search<object>(s => s
+                        .Index(indexName)
+                        .Query(q => q.MatchAll())
+                        .Size(int.MaxValue)
+                        ).Documents;
+
+                    mustDeleteDocuments.Add(indexName, documents.ToList());
+                }
+            }
+            
+
+            var archiverSourceService = _elasticArchiveDataSourceServices.FirstOrDefault();
+            
+            
+            if (!IsPhysicalDelete)
+            {
+                archiverSourceService.Save(mustDeleteDocuments);
+            }
+            foreach(var index in mustDeleteIndices)
+            {
+                _elasticClient.Indices.Delete(index);
+            }
+
+            //_elasticClient.DeleteMany<object>(rslt);
+
+        }
+
+        public virtual async Task ArchiveAsync<TArchiveDataSourceService>(string indiceName, DateTime to, DateTime? from = null, bool IsPhysicalDelete = false) where TArchiveDataSourceService : IElasticArchiveDataSourceStrategy
+        {
+            GetIndexResponse allIndices;
+            if(indiceName == null)
+            {
+                allIndices = await _elasticClient.Indices.GetAsync(new GetIndexRequest(Indices.All));
+            }
+            else
+            {
+                allIndices = await _elasticClient.Indices.GetAsync(indiceName);
+            }
+
+            int toDt = to.Year * 100 + to.Month ;
+            int frDt = from == null ? 0 : from.Value.Year * 100 + from.Value.Month ;
+
+            var mustDeleteIndices = new List<string>();
+            var mustDeleteDocuments = new Dictionary<string, IEnumerable<object>>();
+
+            if (indiceName != null)
+            {
+                var indexName = indiceName;
+
+                int st = Convert.ToInt32(indiceName.Substring(indiceName.Length - 6, 6));
+                if (st <= toDt && st >= frDt)
+                {
+                    mustDeleteIndices.Add(indexName);
+                }
+                var documents = (await _elasticClient.SearchAsync<object>(s => s
+                    .Index(indexName)
+                    .Query(q => q.MatchAll())
+                    .Size(int.MaxValue)
+                    )).Documents;
+
+                mustDeleteDocuments.Add(indexName, documents.ToList());
+            }
+            else
+            {
+                foreach (var index in allIndices.Indices.Where(x => x.Key.Name.StartsWith("openBanking")))
+                {
+                    var indexName = index.Key.Name;
+
+                    int st = Convert.ToInt32(index.Key.Name.Substring(index.Key.Name.Length - 6, 6));
+                    if (st <= toDt && st >= frDt)
+                    {
+                        mustDeleteIndices.Add(indexName);
+                    }
+                    var documents = (await _elasticClient.SearchAsync<object>(s => s
+                        .Index(indexName)
+                        .Query(q => q.MatchAll())
+                        .Size(int.MaxValue)
+                        )).Documents;
+
+                    mustDeleteDocuments.Add(indexName, documents.ToList());
+                }
+            }
+            
+
+            var archiverSourceService = _elasticArchiveDataSourceServices.FirstOrDefault();
+            
+            
+            if (!IsPhysicalDelete)
+            {
+                await archiverSourceService.SaveAsync(mustDeleteDocuments);
+            }
+            foreach(var index in mustDeleteIndices)
+            {
+                _elasticClient.Indices.Delete(index);
+            }
+
+            //_elasticClient.DeleteMany<object>(rslt);
+
         }
 
         public virtual string MapDateTimeToIndex(DateTime dateTime, string indeiceName = null)
@@ -185,42 +171,5 @@ namespace ElasticArchiveHandler
             return null;
         }
 
-        #region helper
-
-        private BoolQuery GetQuery(DateTime to, DateTime? from = null)
-        {
-            if (!from.HasValue)
-            {
-                var index = MapDateTimeToIndex(to);
-                if (index != null)
-                {
-                    return null;
-                }
-            }
-
-            var query = new DateRangeQuery
-            {
-                Field = "timestamp",
-                LessThan = to,
-                //Format = "dd/MM/yyyy||yyyy"
-            };
-            if (from.HasValue)
-            {
-                query.GreaterThan = from.Value;
-            }
-
-            var boolQuery = new BoolQuery()
-            {
-                Filter = new QueryContainer[]
-                {
-                    query
-                }
-
-            };
-
-            return boolQuery;
-
-        }
-        #endregion
     }
 }

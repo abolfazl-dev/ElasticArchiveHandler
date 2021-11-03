@@ -8,12 +8,8 @@ namespace ElasticArchiveHandler
 {
     public interface IElasticArchiveDataSourceStrategy
     {
-        Task SaveAsync<TObject>(IEnumerable<TObject> dataToSave);
-        
-        Task SaveAsync(IEnumerable<object> dataToSave);
+        void Save(IDictionary<string, IEnumerable<object>> dataToSave);
 
-        void Save<TObject>(IEnumerable<TObject> dataToSave);
-        
-        void Save(IEnumerable<object> dataToSave);
+        Task SaveAsync(IDictionary<string, IEnumerable<object>> dataToSave);
     }
 }

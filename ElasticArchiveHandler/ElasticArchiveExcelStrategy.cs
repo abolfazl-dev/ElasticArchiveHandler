@@ -8,24 +8,14 @@ namespace ElasticArchiveHandler
 {
     public class ElasticArchiveExcelStrategy : IElasticArchiveDataSourceStrategy
     {
-        public void Save<TObject>(IEnumerable<TObject> dataToSave)
+        public void Save(IDictionary<string, IEnumerable<object>> dataToSave)
         {
-            throw new NotImplementedException("excel strategy not implimented");
+            throw new NotImplementedException();
         }
 
-        public void Save(IEnumerable<object> dataToSave)
+        public Task SaveAsync(IDictionary<string, IEnumerable<object>> dataToSave)
         {
-            throw new NotImplementedException("excel strategy not implimented");
-        }
-
-        public Task SaveAsync<TObject>(IEnumerable<TObject> dataToSave)
-        {
-            throw new NotImplementedException("excel strategy not implimented");
-        }
-
-        public Task SaveAsync(IEnumerable<object> dataToSave)
-        {
-            throw new NotImplementedException("excel strategy not implimented");
+            throw new NotImplementedException();
         }
     }
 }

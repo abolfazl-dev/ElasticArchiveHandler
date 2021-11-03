@@ -8,58 +8,35 @@ namespace ElasticArchiveHandler
 {
     public interface IElasticArchiveService
     {
-        ///use protected on this
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="indeiceName">name of indice, to get indice list u can use 'ElasticBaseUrl/_cat/indices' in postman</param>
-        /// <param name="dateTime">dateTime</param>
-        /// <returns>indexKey</returns>
-        string MapDateTimeToIndex(DateTime dateTime, string indeiceName= null);
 
         /// <summary>
         /// 
         /// </summary>
-        /// <typeparam name="TObject">set structure of document that must be archive</typeparam>
-        /// <param name="indeiceName"></param>
-        /// <param name="from"></param>
-        /// <param name="to"></param>
-        /// <param name="IsPhysicalDelete"></param>
-        /// <returns></returns>
-        Task ArchiveAsync<TArchiveDataSourceService, TObject>(string indeiceName, DateTime to, DateTime? from = null, bool IsPhysicalDelete = false) where TArchiveDataSourceService : IElasticArchiveDataSourceStrategy where TObject: class;
+        /// <typeparam name="TArchiveDataSourceStrategy">set structure of document that must be archive</typeparam>
+        /// <param name="indiceName">
+        /// set null if u want all indices
+        /// or set target index that u want delete
+        /// </param>
+        /// <param name="from">from date, optional</param>
+        /// <param name="to">to date</param>
+        /// <param name="IsPhysicalDelete">if true then no archive and full delete
+        /// else delete and archive</param>
+        void Archive<TArchiveDataSourceStrategy>(string indiceName, DateTime to, DateTime? from = null, bool IsPhysicalDelete = false) where TArchiveDataSourceStrategy : IElasticArchiveDataSourceStrategy;
 
 
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="indeiceName"></param>
-        /// <param name="from"></param>
-        /// <param name="to"></param>
-        /// <param name="IsPhysicalDelete"></param>
-        /// <returns></returns>
-        Task ArchiveAsync<TArchiveDataSourceService>(string indeiceName, DateTime to, DateTime ? from = null, bool IsPhysicalDelete = false) where TArchiveDataSourceService : IElasticArchiveDataSourceStrategy;
+        /// <typeparam name="TArchiveDataSourceStrategy">set structure of document that must be archive</typeparam>
+        /// <param name="indiceName">
+        /// set null if u want all indices
+        /// or set target index that u want delete
+        /// </param>
+        /// <param name="from">from date, optional</param>
+        /// <param name="to">to date</param>
+        /// <param name="IsPhysicalDelete">if true then no archive and full delete
+        /// else delete and archive</param>
+        Task ArchiveAsync<TArchiveDataSourceStrategy>(string indiceName, DateTime to, DateTime? from = null, bool IsPhysicalDelete = false) where TArchiveDataSourceStrategy : IElasticArchiveDataSourceStrategy;
 
-
-        /// <summary>
-        ///  search against all documents in all indices
-        /// </summary>
-        /// <param name="indeiceName"></param>
-        /// <param name="from"></param>
-        /// <param name="to"></param>
-        /// <param name="IsPhysicalDelete"></param>
-        /// <returns></returns>
-        void Archive<TArchiveDataSourceService>(string indeiceName, DateTime to, DateTime? from = null, bool IsPhysicalDelete = false) where TArchiveDataSourceService : IElasticArchiveDataSourceStrategy;
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <typeparam name="TObject">set structure of document that must be archive</typeparam>
-        /// <typeparam name="TArchiveDataSourceService">set implement instance of IElasticArchiveDataSourceService</typeparam>
-        /// <param name="indeiceName"></param>
-        /// <param name="from"></param>
-        /// <param name="to"></param>
-        /// <param name="IsPhysicalDelete"></param>
-        /// <returns></returns>
-        void Archive<TArchiveDataSourceService, TObject>(string indeiceName, DateTime to, DateTime? from = null, bool IsPhysicalDelete = false) where TArchiveDataSourceService : IElasticArchiveDataSourceStrategy where TObject : class;
     }
 }
