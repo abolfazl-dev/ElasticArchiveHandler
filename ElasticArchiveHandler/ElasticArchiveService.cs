@@ -46,14 +46,15 @@ namespace ElasticArchiveHandler
                 if (st <= toDt && st >= frDt)
                 {
                     mustDeleteIndices.Add(indexName);
-                }
-                var documents = _elasticClient.Search<object>(s => s
-                    .Index(indexName)
-                    .Query(q => q.MatchAll())
-                    .Size(int.MaxValue)
-                    ).Documents;
 
-                mustDeleteDocuments.Add(indexName, documents.ToList());
+                    var documents = _elasticClient.Search<object>(s => s
+                        .Index(indexName)
+                        .Query(q => q.MatchAll())
+                        .Size(int.MaxValue)
+                        ).Documents;
+
+                    mustDeleteDocuments.Add(indexName, documents.ToList());
+                }
             }
             else
             {
@@ -65,14 +66,14 @@ namespace ElasticArchiveHandler
                     if (st <= toDt && st >= frDt)
                     {
                         mustDeleteIndices.Add(indexName);
-                    }
-                    var documents = _elasticClient.Search<object>(s => s
-                        .Index(indexName)
-                        .Query(q => q.MatchAll())
-                        .Size(int.MaxValue)
-                        ).Documents;
+                        var documents = _elasticClient.Search<object>(s => s
+                            .Index(indexName)
+                            .Query(q => q.MatchAll())
+                            .Size(int.MaxValue)
+                            ).Documents;
 
-                    mustDeleteDocuments.Add(indexName, documents.ToList());
+                        mustDeleteDocuments.Add(indexName, documents.ToList());
+                    }
                 }
             }
             
@@ -114,38 +115,53 @@ namespace ElasticArchiveHandler
             if (indiceName != null)
             {
                 var indexName = indiceName;
-
+                
                 int st = Convert.ToInt32(indiceName.Substring(indiceName.Length - 6, 6));
                 if (st <= toDt && st >= frDt)
                 {
                     mustDeleteIndices.Add(indexName);
-                }
-                var documents = (await _elasticClient.SearchAsync<object>(s => s
+                    var documents = (await _elasticClient.SearchAsync<object>(s => s
                     .Index(indexName)
                     .Query(q => q.MatchAll())
                     .Size(int.MaxValue)
                     )).Documents;
 
-                mustDeleteDocuments.Add(indexName, documents.ToList());
+                    mustDeleteDocuments.Add(indexName, documents.ToList());
+                }
+                
             }
             else
             {
-                foreach (var index in allIndices.Indices.Where(x => x.Key.Name.StartsWith("openBanking")))
+                foreach (var index in allIndices.Indices.Where(x => x.Key.Name.StartsWith("openBanking") || x.Key.Name == "kibana_sample_data_logs"))
                 {
                     var indexName = index.Key.Name;
+                    //if (indexName == "kibana_sample_data_logs")
+                    //{
+                    //    mustDeleteIndices.Add(indexName);
+                    //    var documents = (await _elasticClient.SearchAsync<object>(s => s
+                    //        .Index(indexName)
+                    //        .Query(q => q.MatchAll())
+                    //        .Size(int.MaxValue)
+                    //        )).Documents;
+                    //    mustDeleteDocuments.Add(indexName, documents.ToList());
 
-                    int st = Convert.ToInt32(index.Key.Name.Substring(index.Key.Name.Length - 6, 6));
-                    if (st <= toDt && st >= frDt)
-                    {
-                        mustDeleteIndices.Add(indexName);
-                    }
-                    var documents = (await _elasticClient.SearchAsync<object>(s => s
-                        .Index(indexName)
-                        .Query(q => q.MatchAll())
-                        .Size(int.MaxValue)
-                        )).Documents;
+                    //}
+                    //else
+                    //{
+                        int st = Convert.ToInt32(index.Key.Name.Substring(index.Key.Name.Length - 6, 6));
+                        if (st <= toDt && st >= frDt)
+                        {
+                            mustDeleteIndices.Add(indexName);
+                            var documents = (await _elasticClient.SearchAsync<object>(s => s
+                                .Index(indexName)
+                                .Query(q => q.MatchAll())
+                                .Size(int.MaxValue)
+                                )).Documents;
 
-                    mustDeleteDocuments.Add(indexName, documents.ToList());
+                            mustDeleteDocuments.Add(indexName, documents.ToList());
+                        }
+                    //}
+                    
                 }
             }
             
