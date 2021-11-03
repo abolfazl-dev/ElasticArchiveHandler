@@ -166,10 +166,5 @@ namespace ElasticArchiveHandler
 
         }
 
-        public virtual string MapDateTimeToIndex(DateTime dateTime, string indeiceName = null)
-        {
-            return null;
-        }
-
     }
 }
