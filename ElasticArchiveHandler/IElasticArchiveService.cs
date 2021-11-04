@@ -38,5 +38,6 @@ namespace ElasticArchiveHandler
         /// else delete and archive</param>
         Task ArchiveAsync<TArchiveDataSourceStrategy>(string indiceName, DateTime to, DateTime? from = null, bool IsPhysicalDelete = false) where TArchiveDataSourceStrategy : IElasticArchiveDataSourceStrategy;
 
+        void SnapShot(DateTime to, DateTime? from = null);
     }
 }

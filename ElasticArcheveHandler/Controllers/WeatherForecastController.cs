@@ -30,7 +30,7 @@ namespace ElasticArcheveHandler.Controllers
         public async Task<IEnumerable<WeatherForecast>> Get()
         {
 
-            await _elasticArchiveService.ArchiveAsync<ElasticArchiveExcelStrategy>(indiceName: null, to: DateTime.Now, from: DateTime.Now.AddDays(-2));
+            _elasticArchiveService.SnapShot(to: DateTime.Now,from: DateTime.Now.AddDays(-12));
             var rng = new Random();
             return Enumerable.Range(1, 5).Select(index => new WeatherForecast
             {

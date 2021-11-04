@@ -12,11 +12,17 @@ namespace ElasticArchiveHandler
         private readonly IEnumerable<IElasticArchiveDataSourceStrategy> _elasticArchiveDataSourceServices;
 
         private readonly IElasticClient _elasticClient;
+       
+        private readonly string _repositoryBasePath;
 
-        public ElasticArchiveService(IElasticClient elasticClient, IEnumerable<IElasticArchiveDataSourceStrategy> elasticArchiveDataSourceServices)
+        public ElasticArchiveService(IElasticClient elasticClient, 
+            IEnumerable<IElasticArchiveDataSourceStrategy> elasticArchiveDataSourceServices,
+            string repositoryBasePath
+            )
         {
             _elasticClient = elasticClient;
             _elasticArchiveDataSourceServices = elasticArchiveDataSourceServices;
+            _repositoryBasePath = repositoryBasePath;
         }
 
 
@@ -25,40 +31,30 @@ namespace ElasticArchiveHandler
             int toDt = to.Year * 100 + to.Month;
             int frDt = from == null ? 0 : from.Value.Year * 100 + from.Value.Month;
             var mustDeleteIndices = new List<string>();
-            var mustDeleteDocuments = new Dictionary<string, IEnumerable<object>>();
 
             var allIndices = _elasticClient.Indices.Get(new GetIndexRequest(Indices.All));
-            foreach (var index in allIndices.Indices.Where(x => x.Key.Name.StartsWith("openBanking")))
+            foreach (var index in allIndices.Indices)//.Where(x => x.Key.Name.StartsWith("openBanking")))
             {
                 var indexName = index.Key.Name;
-
-                int st = Convert.ToInt32(index.Key.Name.Substring(index.Key.Name.Length - 6, 6));
-                if (st <= toDt && st >= frDt)
+                
+                if (IsIndexInDateRange(indexName, toDt, frDt))
                 {
                     mustDeleteIndices.Add(indexName);
-                    var documents = _elasticClient.Search<object>(s => s
-                        .Index(indexName)
-                        .Query(q => q.MatchAll())
-                        .Size(int.MaxValue)
-                        ).Documents;
 
-                    mustDeleteDocuments.Add(indexName, documents.ToList());
-
-                    var isExist = IsRepositoryExist(indexName + "_repo");
+                    var isExist = IsRepositoryExist();
                     if (!isExist)
                     {
-                        CreateRepository(indexName + "_repo");
+                        CreateRepository();
                     }
-
-
-
-                    var rep = new CreateRepositoryRequest(indexName)
-                    {
-
-                    };
+                    
+                    CreatSnapShot(indexName);
 
                 }
             }
+
+            mustDeleteIndices.ForEach(x =>
+                _elasticClient.Indices.Delete(x)
+            );
 
         }
 
@@ -72,7 +68,6 @@ namespace ElasticArchiveHandler
             else
             {
                 allIndices = _elasticClient.Indices.Get(indiceName);
-
             }
 
             int toDt = to.Year * 100 + to.Month ;
@@ -228,19 +223,32 @@ namespace ElasticArchiveHandler
 
         #region helper
 
-        private bool IsRepositoryExist(string repoName)
+        private bool IsRepositoryExist()
         {
-            var RepoVerifiyResponse = _elasticClient.Snapshot.VerifyRepository(repoName);
+            var RepoVerifiyResponse = _elasticClient.Snapshot.VerifyRepository("baseRepo");
             var rslt = RepoVerifiyResponse.IsValid;
             return rslt;
         }
 
-        private void CreateRepository(string repoName)
+        private void CreateRepository()
         {
-            _elasticClient.Snapshot.Snapshot("es_backup", "snapshot_4", x => x.WaitForCompletion(true));
+            var createRepoReq = new CreateRepositoryRequest("baseRepo")
+            {
+                Repository = new FileSystemRepository(new FileSystemRepositorySettings(_repositoryBasePath) {
+                    Compress = true,
+                    ChunkSize = "64m"
+                })
+            };
+
+            _elasticClient.Snapshot.CreateRepository(createRepoReq);
+        }
+        
+        private void CreatSnapShot(string name)
+        {
+            _elasticClient.Snapshot.Snapshot("baseRepo", name, x => x.WaitForCompletion(true));
         }
 
-        
+
         private bool IsIndexInDateRange(string indexName, int toDt, int frDt)
         {
             if (indexName.Length < 6)

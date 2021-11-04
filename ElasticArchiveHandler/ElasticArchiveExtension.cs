@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Nest;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -26,7 +27,7 @@ namespace ElasticArchiveHandler
         
         public static IServiceCollection AddElasticArchiveService(this IServiceCollection services)
         {
-            services.AddSingleton<IElasticArchiveService, ElasticArchiveService>();
+            services.AddSingleton(GetElasticArchiveService);
             services.AddSingleton<IExcelWriterService, ExcelWriterService>();
 
 
@@ -55,6 +56,14 @@ namespace ElasticArchiveHandler
                     }
                 }
             }
+        }
+
+        private static IElasticArchiveService GetElasticArchiveService(IServiceProvider services)
+        {
+            var client = services.GetRequiredService<IElasticClient>();
+            var dataSourceStrategies = services.GetRequiredService<IEnumerable<IElasticArchiveDataSourceStrategy>>();
+            ///read from config
+            return new ElasticArchiveService(client, dataSourceStrategies, "D:/elasticSnapShots/");
         }
     }
 }
