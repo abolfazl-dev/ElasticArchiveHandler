@@ -24,9 +24,15 @@ namespace ElasticArchiveHandler
 
         public async Task SaveAsync(IDictionary<string, IEnumerable<object>> dataToSave)
         {
+            
+            //var byteArray = _excelWriterService.Write(dataToSave);
+            //await File.WriteAllBytesAsync($"{DateTime.Now.Date.ToShortDateString().Replace("/","_")}.csv", byteArray);
+            foreach(var item in dataToSave)
+            {
+                var byteArray = _excelWriterService.Write(item.Value);
+                await File.WriteAllBytesAsync($"{item.Key +"_" +DateTime.Now.Date.ToShortDateString().Replace("/","_")}.csv", byteArray);
+            }
 
-            var byteArray = _excelWriterService.Write(dataToSave);
-            await File.WriteAllBytesAsync($"{DateTime.Now.Date.ToShortDateString().Replace("/","_")}.csv", byteArray);
         }
     }
 }
