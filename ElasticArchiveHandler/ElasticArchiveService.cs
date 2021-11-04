@@ -33,7 +33,7 @@ namespace ElasticArchiveHandler
             var mustDeleteIndices = new List<string>();
 
             var allIndices = _elasticClient.Indices.Get(new GetIndexRequest(Indices.All));
-            foreach (var index in allIndices.Indices)//.Where(x => x.Key.Name.StartsWith("openBanking")))
+            foreach (var index in allIndices.Indices.Where(x => x.Key.Name.StartsWith("openBanking")))
             {
                 var indexName = index.Key.Name;
                 
