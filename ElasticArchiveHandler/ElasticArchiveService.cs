@@ -53,7 +53,10 @@ namespace ElasticArchiveHandler
             }
 
             mustDeleteIndices.ForEach(x =>
-                _elasticClient.Indices.Delete(x)
+                {
+                    _elasticClient.Indices.Close(x);
+                    _elasticClient.Indices.Delete(x);
+                }
             );
 
         }
@@ -245,7 +248,8 @@ namespace ElasticArchiveHandler
         
         private void CreatSnapShot(string name)
         {
-            _elasticClient.Snapshot.Snapshot("baseRepo", name, x => x.WaitForCompletion(true));
+            _elasticClient.Snapshot.Snapshot("baseRepo", name, x => x.WaitForCompletion(true)
+            .Index(name));
         }
 
 
